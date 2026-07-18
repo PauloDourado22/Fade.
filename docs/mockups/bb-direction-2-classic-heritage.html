@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Direction 2 — Classic Heritage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f7f3ea; --surface:#fffdf8; --surface-2:#efe8d8;
+    --border:#ded2b4; --border-strong:#c7b78c;
+    --text:#251f16; --text-muted:#6b6150; --text-faint:#a3987e;
+    --accent:#7a3b34; --accent-2:#2f4a3c;
+    --good:#2f7a52; --moderate:#a8791f; --bad:#a13a30;
+    --radius:2px; --dur:150ms; --ease:ease;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:0 0 48px;}
+  .label-tag{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);text-align:center;padding:20px 0 0;}
+  .nav{max-width:820px;margin:0 auto;padding:28px 24px 0;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:20px;}
+  .brand{font-family:'Libre Baskerville',serif;font-weight:700;font-size:19px;color:var(--text);text-decoration:none;letter-spacing:.01em;}
+  .nav a.action{color:var(--text-muted);font-size:13px;text-decoration:none;}
+  .nav a.action:hover{color:var(--accent);}
+  .hero{text-align:center;padding:64px 24px 48px;max-width:640px;margin:0 auto;}
+  .hero .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;font-weight:600;}
+  .hero h1{font-family:'Libre Baskerville',serif;font-weight:700;font-size:34px;line-height:1.25;margin:0 0 16px;}
+  .hero p{color:var(--text-muted);margin:0 0 28px;font-size:15px;line-height:1.6;}
+  .btn{display:inline-block;background:var(--accent);color:#fdf6ee;border:none;border-radius:var(--radius);padding:13px 28px;font-size:14px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;text-decoration:none;transition:background var(--dur) var(--ease);}
+  .btn:hover{background:#5f2d27;}
+  .btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border-strong);}
+  .btn-secondary:hover{background:var(--surface-2);}
+  .section{max-width:820px;margin:0 auto;padding:44px 24px 0;}
+  .steps{display:flex;gap:0;margin-bottom:28px;font-size:11px;color:var(--text-faint);letter-spacing:.05em;text-transform:uppercase;}
+  .step{flex:1;text-align:center;padding-bottom:12px;border-bottom:1px solid var(--border);font-weight:600;}
+  .step.done{color:var(--accent-2);border-bottom-color:var(--accent-2);}
+  .step.active{color:var(--accent);border-bottom:2px solid var(--accent);}
+  .option-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:26px;}
+  .option-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;text-align:left;color:var(--text);transition:border-color var(--dur) var(--ease);}
+  .option-card:hover{border-color:var(--border-strong);}
+  .option-card.selected{border-color:var(--accent);border-width:1.5px;background:var(--surface-2);}
+  .option-card .title{font-family:'Libre Baskerville',serif;font-weight:700;font-size:15px;}
+  .option-card .subtitle{color:var(--text-muted);font-size:12.5px;margin-top:5px;line-height:1.5;}
+  .slot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:8px;margin-bottom:8px;}
+  .slot-btn{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px;color:var(--text);font-size:13px;font-weight:500;transition:border-color var(--dur) var(--ease);}
+  .slot-btn:hover{border-color:var(--border-strong);}
+  .slot-btn.selected{border-color:var(--accent);background:var(--surface-2);color:var(--accent);font-weight:700;}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .badge{display:inline-flex;align-items:center;gap:6px;border-radius:var(--radius);padding:5px 12px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;border:1px solid currentColor;}
+  .badge-confirmed{background:rgba(47,122,82,.08);color:var(--good);}
+  .badge-pending{background:rgba(168,121,31,.08);color:var(--moderate);}
+  .badge-cancelled{background:rgba(161,58,48,.08);color:var(--bad);}
+  .note{max-width:820px;margin:40px auto 0;color:var(--text-faint);font-size:12px;line-height:1.6;border-top:1px solid var(--border);padding:16px 24px 0;}
+</style>
+</head>
+<body>
+  <p class="label-tag">Direction 2 — Classic heritage (traditional barbershop signage)</p>
+  <div class="nav">
+    <a class="brand" href="#">Rui &amp; Marta Barbershop</a>
+    <a class="action" href="#">Staff login</a>
+  </div>
+  <div class="hero">
+    <div class="kicker">Est. neighbourhood barbershop</div>
+    <h1>Book your next cut in under a minute</h1>
+    <p>Pick a service, pick a barber, pick a time. Pay a small deposit to hold your slot.</p>
+    <a class="btn" href="#">Book now</a>
+  </div>
+
+  <div class="section">
+    <div class="steps">
+      <div class="step done">Service</div>
+      <div class="step active">Barber</div>
+      <div class="step">Time</div>
+      <div class="step">Details</div>
+    </div>
+    <div class="option-grid">
+      <div class="option-card selected">
+        <div class="title">João Ferreira</div>
+        <div class="subtitle">12 years experience · fades &amp; classic cuts</div>
+      </div>
+      <div class="option-card">
+        <div class="title">Marta Silva</div>
+        <div class="subtitle">Beard specialist · straight razor shaves</div>
+      </div>
+    </div>
+    <div class="slot-grid">
+      <div class="slot-btn">09:30</div>
+      <div class="slot-btn selected">10:00</div>
+      <div class="slot-btn">10:30</div>
+      <div class="slot-btn">14:00</div>
+      <div class="slot-btn">14:30</div>
+      <div class="slot-btn">16:00</div>
+    </div>
+    <div class="badges">
+      <span class="badge badge-confirmed">Confirmed</span>
+      <span class="badge badge-pending">Pending payment</span>
+      <span class="badge badge-cancelled">Cancelled</span>
+    </div>
+  </div>
+  <p class="note">Character: cream/parchment background, deep burgundy + forest-green accents, serif headline evoking old-school barbershop signage, sharp near-square corners instead of rounded, uppercase small-caps labels. Reads as heritage/craft rather than tech-startup.</p>
+</body>
+</html>

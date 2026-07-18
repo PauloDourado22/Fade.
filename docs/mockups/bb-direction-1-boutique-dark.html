@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Direction 1 — Boutique Dark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12100e; --surface:#1c1916; --surface-2:#242019;
+    --border:rgba(212,163,115,0.16); --border-strong:rgba(212,163,115,0.32);
+    --text:#f3ede3; --text-muted:#a89a86; --text-faint:#6f6455;
+    --accent:#d4a373; --accent-2:#8a5a3a;
+    --good:#5fbf8f; --moderate:#d9b34a; --bad:#d9695a;
+    --radius:14px; --dur:220ms; --ease:cubic-bezier(.2,.7,.3,1);
+    --shadow:0 12px 32px -16px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;padding:0 0 48px;-webkit-font-smoothing:antialiased;}
+  .label-tag{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-faint);text-align:center;padding:20px 0 0;}
+  .nav{max-width:800px;margin:0 auto;padding:28px 24px 0;display:flex;justify-content:space-between;align-items:center;}
+  .brand{font-family:'Fraunces',serif;font-weight:600;font-size:18px;color:var(--text);text-decoration:none;letter-spacing:-.01em;}
+  .nav a.action{color:var(--text-muted);font-size:13px;text-decoration:none;transition:color var(--dur) var(--ease);}
+  .nav a.action:hover{color:var(--accent);}
+  .hero{text-align:center;padding:72px 24px 56px;max-width:640px;margin:0 auto;background:radial-gradient(500px circle at 50% 0%, rgba(212,163,115,.08), transparent 60%);}
+  .hero h1{font-family:'Fraunces',serif;font-size:38px;font-weight:600;letter-spacing:-.01em;line-height:1.15;margin:0 0 14px;}
+  .hero p{color:var(--text-muted);margin:0 0 28px;font-size:16px;line-height:1.5;}
+  .btn{display:inline-block;background:var(--accent);color:#1c1108;border:none;border-radius:10px;padding:14px 26px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;box-shadow:0 8px 20px -8px rgba(212,163,115,.5);transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease);}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px -8px rgba(212,163,115,.6);}
+  .btn-secondary{background:var(--surface-2);color:var(--text);border:1px solid var(--border);box-shadow:none;}
+  .btn-secondary:hover{transform:none;border-color:var(--border-strong);}
+  .section{max-width:800px;margin:0 auto;padding:40px 24px 0;}
+  .steps{display:flex;gap:6px;margin-bottom:28px;font-size:12px;color:var(--text-faint);}
+  .step{flex:1;text-align:center;padding-bottom:10px;border-bottom:2px solid var(--border);font-weight:500;transition:color var(--dur) var(--ease),border-color var(--dur) var(--ease);}
+  .step.done{color:var(--accent);border-bottom-color:var(--accent-2);}
+  .step.active{color:var(--text);border-bottom-color:var(--accent);font-weight:600;}
+  .option-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:24px;}
+  .option-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 18px;text-align:left;color:var(--text);box-shadow:var(--shadow);transition:border-color var(--dur) var(--ease),transform var(--dur) var(--ease);}
+  .option-card:hover{border-color:var(--border-strong);transform:translateY(-2px);}
+  .option-card.selected{border-color:var(--accent);background:var(--surface-2);}
+  .option-card .title{font-weight:600;font-size:15px;}
+  .option-card .subtitle{color:var(--text-muted);font-size:12.5px;margin-top:4px;line-height:1.4;}
+  .slot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:8px;}
+  .slot-btn{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:11px;color:var(--text);font-size:13px;font-weight:500;transition:border-color var(--dur) var(--ease),background var(--dur) var(--ease);}
+  .slot-btn:hover{border-color:var(--border-strong);}
+  .slot-btn.selected{border-color:var(--accent);background:var(--surface-2);color:var(--accent);}
+  .badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .badge{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 12px;font-size:11.5px;font-weight:600;}
+  .badge-confirmed{background:rgba(95,191,143,.14);color:var(--good);}
+  .badge-pending{background:rgba(217,179,74,.14);color:var(--moderate);}
+  .badge-cancelled{background:rgba(217,105,90,.14);color:var(--bad);}
+  .note{max-width:800px;margin:40px auto 0;color:var(--text-faint);font-size:12px;line-height:1.6;border-top:1px solid var(--border);padding:16px 24px 0;}
+</style>
+</head>
+<body>
+  <p class="label-tag">Direction 1 — Boutique dark (warm charcoal + brass, refined)</p>
+  <div class="nav">
+    <a class="brand" href="#">Rui &amp; Marta Barbershop</a>
+    <a class="action" href="#">Staff login</a>
+  </div>
+  <div class="hero">
+    <h1>Book your next cut in under a minute</h1>
+    <p>Pick a service, pick a barber, pick a time. Pay a small deposit to hold your slot.</p>
+    <a class="btn" href="#">Book now</a>
+  </div>
+
+  <div class="section">
+    <div class="steps">
+      <div class="step done">Service</div>
+      <div class="step active">Barber</div>
+      <div class="step">Time</div>
+      <div class="step">Details</div>
+    </div>
+    <div class="option-grid">
+      <div class="option-card selected">
+        <div class="title">João Ferreira</div>
+        <div class="subtitle">12 years experience · fades &amp; classic cuts</div>
+      </div>
+      <div class="option-card">
+        <div class="title">Marta Silva</div>
+        <div class="subtitle">Beard specialist · straight razor shaves</div>
+      </div>
+    </div>
+    <div class="slot-grid">
+      <div class="slot-btn">09:30</div>
+      <div class="slot-btn selected">10:00</div>
+      <div class="slot-btn">10:30</div>
+      <div class="slot-btn">14:00</div>
+      <div class="slot-btn">14:30</div>
+      <div class="slot-btn">16:00</div>
+    </div>
+    <div class="badges">
+      <span class="badge badge-confirmed">Confirmed</span>
+      <span class="badge badge-pending">Pending payment</span>
+      <span class="badge badge-cancelled">Cancelled</span>
+    </div>
+  </div>
+  <p class="note">Character: deepened warm-charcoal palette (the existing tan accent kept, but given a proper shadow/motion/type system), serif display headline for a boutique-grooming feel, soft glow shadows, 220ms eased transitions on every interactive element. The most direct "same DNA, properly finished" option.</p>
+</body>
+</html>

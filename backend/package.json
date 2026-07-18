@@ -1,0 +1,25 @@
+{
+  "name": "barbershop-booking-api",
+  "version": "1.0.0",
+  "description": "Appointment booking API for a barbershop: availability, slot-locked bookings, Stripe deposits, and an owner dashboard.",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "seed": "node src/db/seed.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.3.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "nanoid": "^5.0.7",
+    "stripe": "^16.8.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
