@@ -17,7 +17,7 @@ function ConfirmationContent() {
     }
 
     // The webhook that actually confirms the appointment runs server-side,
-    // async, independent of this page load — so we poll for a few seconds
+    // async, independent of this page load - so we poll for a few seconds
     // rather than assuming "the browser landed here" means "payment is
     // confirmed". If the webhook is slow (or Stripe retries), this still
     // ends up correct instead of showing a false negative.
@@ -43,34 +43,65 @@ function ConfirmationContent() {
   }, [code]);
 
   return (
-    <main className="container">
-      <div className="card">
-        {status === 'checking' && <p>Confirming your booking…</p>}
-        {status === 'confirmed' && (
-          <>
-            <p className="success-text">Booking confirmed!</p>
-            <p className="subtitle">
-              {appointment?.customerName}, see you at{' '}
-              {new Date(appointment.startAt).toLocaleString()}.
-            </p>
-          </>
-        )}
-        {status === 'pending' && (
+    <main className="container" style={{ maxWidth: 480 }}>
+      {status === 'checking' && (
+        <div className="card">
+          <p className="empty-state" style={{ padding: 0, textAlign: 'left' }}>Confirming your booking…</p>
+        </div>
+      )}
+
+      {status === 'confirmed' && (
+        <div>
+          <h1 style={{
+            fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 900,
+            letterSpacing: '-0.03em', textTransform: 'uppercase', lineHeight: 1, margin: '0 0 14px',
+            color: 'var(--accent)',
+          }}>
+            You&apos;re in.
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>
+            {appointment?.staffName} · {appointment?.serviceName}{' '}
+            {appointment?.startAt && new Date(appointment.startAt).toLocaleString([], {
+              weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+            })}
+          </p>
+          <div className="code-chip">BOOKING #{code} · SHOW AT THE CHAIR</div>
+          <p style={{ marginTop: 24 }}>
+            <a href="/book" className="btn btn-secondary">Book another</a>
+          </p>
+          <p style={{ marginTop: 16 }}>
+            <a href={`/book/manage?code=${code}`} className="action-link" style={{ fontSize: 13 }}>
+              Need to reschedule or cancel? →
+            </a>
+          </p>
+        </div>
+      )}
+
+      {status === 'pending' && (
+        <div className="card">
           <p>
             Payment received, confirmation is still processing — you&apos;ll get an email shortly.
-            Keep this confirmation code: <strong>{code}</strong>
           </p>
-        )}
-        {status === 'missing-code' && <p className="error-text">No confirmation code found in the URL.</p>}
-        {status === 'error' && <p className="error-text">Couldn&apos;t look up your booking. Contact the shop with code {code}.</p>}
-      </div>
+          <p className="code-chip" style={{ marginTop: 12 }}>CODE {code}</p>
+        </div>
+      )}
+
+      {status === 'missing-code' && (
+        <div className="card"><p className="error-text">No confirmation code found in the URL.</p></div>
+      )}
+
+      {status === 'error' && (
+        <div className="card">
+          <p className="error-text">Couldn&apos;t look up your booking. Contact the shop with code {code}.</p>
+        </div>
+      )}
     </main>
   );
 }
 
 export default function ConfirmationPage() {
   return (
-    <Suspense fallback={<main className="container"><p>Loading…</p></main>}>
+    <Suspense fallback={<main className="container"><p className="empty-state">Loading…</p></main>}>
       <ConfirmationContent />
     </Suspense>
   );

@@ -81,6 +81,23 @@ export function createBookingHold({ serviceId, staffId, startAt, customer }) {
 
 export async function createHoldWithCheckout(input) {
   const { appointment, service } = createBookingHold(input);
+
+  // Test-only bypass (see config.js's depositEnabled comment). Skips Stripe
+  // entirely and confirms the appointment immediately - the double-booking
+  // conflict check already ran inside createBookingHold above, so this only
+  // turns off payment collection, not slot-safety. The frontend doesn't
+  // need to know this happened: it still gets a `checkoutUrl` and does its
+  // normal `window.location.href = checkoutUrl` redirect - it just lands
+  // straight on the real confirmation page instead of Stripe Checkout.
+  if (!config.depositEnabled) {
+    db.prepare("UPDATE appointments SET status = 'confirmed' WHERE id = ?").run(appointment.id);
+    const confirmed = db.prepare('SELECT * FROM appointments WHERE id = ?').get(appointment.id);
+    return {
+      appointment: confirmed,
+      checkoutUrl: `${config.frontendUrl}/book/confirmation?code=${confirmed.public_code}`,
+    };
+  }
+
   const session = await createCheckoutSession({
     appointment,
     service,
@@ -119,4 +136,78 @@ export function confirmAppointmentByStripeSession(sessionId, paymentIntentId) {
 
 export function getAppointmentByPublicCode(code) {
   return db.prepare('SELECT * FROM appointments WHERE public_code = ?').get(code);
+}
+
+// Which statuses a customer-initiated reschedule/cancel is allowed to act
+// on - mirrors VALID_TRANSITIONS in routes/appointments.js (the owner-side
+// status endpoint): you can't "reschedule" something already completed or
+// cancelled.
+const RESCHEDULABLE_STATUSES = ['confirmed', 'pending_payment'];
+
+/**
+ * Moves a customer's own appointment to a new start time, found by their
+ * public_code (see the module doc on createBookingHold for why that's the
+ * right identifier for an unauthenticated customer to prove "this is mine").
+ *
+ * Reuses the exact same check-then-update-inside-a-transaction shape as
+ * createBookingHold: a reschedule is a second way to end up with two
+ * appointments overlapping the same staff member's time, so it needs the
+ * same protection, not a weaker copy of it. The only difference from the
+ * original booking's conflict check is `id != ?` — a slot must not conflict
+ * with any *other* appointment, but obviously does "conflict" with its own
+ * current row.
+ */
+export function rescheduleAppointment({ publicCode, newStartAt }) {
+  const appointment = getAppointmentByPublicCode(publicCode);
+  if (!appointment) throw new NotFoundError('No appointment found for that code.');
+
+  if (!RESCHEDULABLE_STATUSES.includes(appointment.status)) {
+    throw new ConflictError(`A booking that is "${appointment.status}" can't be rescheduled.`);
+  }
+
+  const service = db.prepare('SELECT * FROM services WHERE id = ?').get(appointment.service_id);
+  const newStart = new Date(newStartAt);
+  const newEnd = new Date(newStart.getTime() + service.duration_minutes * 60_000);
+
+  const update = db.transaction(() => {
+    const conflict = db
+      .prepare(
+        `SELECT id FROM appointments
+         WHERE staff_id = ?
+           AND id != ?
+           AND status IN ('confirmed', 'pending_payment')
+           AND start_at < ? AND end_at > ?`
+      )
+      .get(appointment.staff_id, appointment.id, newEnd.toISOString(), newStart.toISOString());
+
+    if (conflict) {
+      throw new ConflictError('That slot was just taken. Please pick another time.');
+    }
+
+    db.prepare('UPDATE appointments SET start_at = ?, end_at = ? WHERE id = ?').run(
+      newStart.toISOString(),
+      newEnd.toISOString(),
+      appointment.id
+    );
+
+    return db.prepare('SELECT * FROM appointments WHERE id = ?').get(appointment.id);
+  });
+
+  return update();
+}
+
+/**
+ * Customer-initiated cancel, found by public_code - the self-service
+ * counterpart to the owner-only PATCH /api/appointments/:id/status route.
+ */
+export function cancelAppointmentByPublicCode(publicCode) {
+  const appointment = getAppointmentByPublicCode(publicCode);
+  if (!appointment) throw new NotFoundError('No appointment found for that code.');
+
+  if (!RESCHEDULABLE_STATUSES.includes(appointment.status)) {
+    throw new ConflictError(`A booking that is "${appointment.status}" can't be cancelled here.`);
+  }
+
+  db.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?").run(appointment.id);
+  return db.prepare('SELECT * FROM appointments WHERE id = ?').get(appointment.id);
 }

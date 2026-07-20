@@ -4,6 +4,8 @@ import { getAvailableSlots } from '../services/availability.js';
 import {
   createHoldWithCheckout,
   getAppointmentByPublicCode,
+  rescheduleAppointment,
+  cancelAppointmentByPublicCode,
   ConflictError,
   NotFoundError,
 } from '../services/bookingService.js';
@@ -84,11 +86,83 @@ publicRouter.get('/appointments/status', (req, res) => {
   }
 
   // Deliberately return only what a customer needs to see their own
-  // confirmation — not the full row (no internal staff_id, no other
-  // customers' data reachable from here since lookup is by unguessable code).
+  // confirmation — not the full row (no internal ids beyond the names below,
+  // no other customers' data reachable from here since lookup is by
+  // unguessable code). staffName/serviceName are the same two fields the
+  // /manage endpoint already exposes for this same code — no new surface,
+  // just enough for the confirmation screen to read "Rui · Skin Fade · ...".
+  const service = db.prepare('SELECT name FROM services WHERE id = ?').get(appointment.service_id);
+  const staff = db.prepare('SELECT name FROM staff WHERE id = ?').get(appointment.staff_id);
+
   res.json({
     status: appointment.status,
     startAt: appointment.start_at,
     customerName: appointment.customer_name,
+    staffName: staff?.name,
+    serviceName: service?.name,
   });
+});
+
+// Same rate limiter shape as bookingLimiter above, on its own instance: an
+// unauthenticated write endpoint (even one gated by an unguessable code) is
+// still a hold-griefing / abuse vector on IP alone, since the limiter runs
+// before the code is even checked. See docs/adr/0002, decision 5.
+const manageLimiter = createRateLimiter({ windowMs: 10 * 60 * 1000, max: 12 });
+
+// Everything a customer needs to see their own booking to manage it -
+// deliberately the same "return only what's needed" shape as /status above,
+// plus the fields the manage page's reschedule UI needs (service duration,
+// staff id) to fetch fresh availability.
+publicRouter.get('/appointments/:code/manage', manageLimiter, (req, res) => {
+  const { code } = req.params;
+  const appointment = getAppointmentByPublicCode(code);
+  if (!appointment) return res.status(404).json({ error: 'No appointment found for that code.' });
+
+  const service = db.prepare('SELECT * FROM services WHERE id = ?').get(appointment.service_id);
+  const staff = db.prepare('SELECT id, name FROM staff WHERE id = ?').get(appointment.staff_id);
+
+  res.json({
+    status: appointment.status,
+    startAt: appointment.start_at,
+    customerName: appointment.customer_name,
+    serviceName: service?.name,
+    depositCents: appointment.deposit_cents,
+    priceCents: service?.price_cents,
+    durationMinutes: service?.duration_minutes,
+    staffId: staff?.id,
+    staffName: staff?.name,
+  });
+});
+
+publicRouter.post('/appointments/:code/reschedule', manageLimiter, (req, res, next) => {
+  const { code } = req.params;
+  const { startAt } = req.body ?? {};
+
+  if (!isIsoDateString(startAt)) {
+    return res.status(400).json({ error: 'A valid startAt is required.' });
+  }
+
+  try {
+    const appointment = rescheduleAppointment({ publicCode: code, newStartAt: startAt });
+    res.json({ status: appointment.status, startAt: appointment.start_at });
+  } catch (err) {
+    if (err instanceof ConflictError || err instanceof NotFoundError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    next(err);
+  }
+});
+
+publicRouter.post('/appointments/:code/cancel', manageLimiter, (req, res, next) => {
+  const { code } = req.params;
+
+  try {
+    const appointment = cancelAppointmentByPublicCode(code);
+    res.json({ status: appointment.status });
+  } catch (err) {
+    if (err instanceof ConflictError || err instanceof NotFoundError) {
+      return res.status(err.status).json({ error: err.message });
+    }
+    next(err);
+  }
 });

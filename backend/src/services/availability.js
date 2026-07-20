@@ -1,6 +1,10 @@
 import { db } from '../db/index.js';
 
-const SLOT_STEP_MINUTES = 15;
+// Bookable start times are offered on the hour only (10:00, 11:00, ... not
+// 10:15, 10:30...). Working hours themselves (10:00-20:00) live in
+// working_hours rows, seeded/enforced by db/seed.js - this constant only
+// controls the granularity slots are offered at within those hours.
+const SLOT_STEP_MINUTES = 60;
 
 /**
  * Marks any pending_payment appointment whose hold has expired as 'expired',

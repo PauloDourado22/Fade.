@@ -2,12 +2,19 @@ import { Router } from 'express';
 import { db } from '../db/index.js';
 import { requireAuth } from '../middleware/auth.js';
 import { expireStaleHolds } from '../services/availability.js';
+import { getDashboardStats } from '../services/dashboardStats.js';
 
 export const appointmentsRouter = Router();
 
 // Every route below requires a valid owner/staff JWT — this whole router is
 // the "dashboard" surface, and none of it should be reachable by a customer.
 appointmentsRouter.use(requireAuth);
+
+// Static path, so no conflict with the '/:id/status' route below even though
+// both live on the same router.
+appointmentsRouter.get('/stats', (req, res) => {
+  res.json(getDashboardStats());
+});
 
 appointmentsRouter.get('/', (req, res) => {
   expireStaleHolds();

@@ -28,9 +28,15 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="container" style={{ maxWidth: 380 }}>
+    <main className="container" style={{ maxWidth: 380, paddingTop: 96 }}>
+      <span className="brand" style={{ display: 'block', marginBottom: 24 }}>FADE.</span>
       <div className="card">
-        <h1 style={{ fontSize: 18, marginTop: 0 }}>Staff login</h1>
+        <h1 style={{
+          fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800,
+          textTransform: 'uppercase', letterSpacing: '0.02em', marginTop: 0,
+        }}>
+          Staff login
+        </h1>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Email</label>

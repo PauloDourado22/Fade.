@@ -25,6 +25,14 @@ export const api = {
   createAppointment: (payload) =>
     request('/api/public/appointments', { method: 'POST', body: JSON.stringify(payload) }),
   getAppointmentStatus: (code) => request(`/api/public/appointments/status?code=${code}`),
+  getManageBooking: (code) => request(`/api/public/appointments/${code}/manage`),
+  rescheduleAppointment: (code, startAt) =>
+    request(`/api/public/appointments/${code}/reschedule`, {
+      method: 'POST',
+      body: JSON.stringify({ startAt }),
+    }),
+  cancelAppointment: (code) =>
+    request(`/api/public/appointments/${code}/cancel`, { method: 'POST' }),
 
   login: (email, password) =>
     request('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
@@ -36,4 +44,5 @@ export const api = {
       token,
       body: JSON.stringify({ status }),
     }),
+  getDashboardStats: (token) => request('/api/appointments/stats', { token }),
 };

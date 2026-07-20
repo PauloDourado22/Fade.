@@ -10,6 +10,21 @@ const stripe = new Stripe(config.stripeSecretKey);
  * finds its way back to our row after Stripe redirects/notifies us.
  */
 export async function createCheckoutSession({ appointment, service, publicCode }) {
+  // Turn a cryptic Stripe 401 (and the generic 500 it becomes by the time it
+  // reaches the browser) into an actionable message. This is exactly what
+  // happens if DEPOSIT_ENABLED is (still) true but STRIPE_SECRET_KEY is
+  // still the repo's placeholder - e.g. a backend process that was started
+  // before .env was edited and never restarted, since `node --watch` reacts
+  // to changed JS files, not a changed .env text file.
+  if (!config.stripeSecretKey || config.stripeSecretKey.includes('replace')) {
+    throw new Error(
+      'Stripe secret key is not configured (still the placeholder value). ' +
+      'Either set a real STRIPE_SECRET_KEY in backend/.env, or set ' +
+      'DEPOSIT_ENABLED=false there to skip Stripe for testing - and make ' +
+      'sure the backend process was restarted after editing .env.'
+    );
+  }
+
   return stripe.checkout.sessions.create({
     mode: 'payment',
     payment_method_types: ['card'],
