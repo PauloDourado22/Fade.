@@ -61,7 +61,7 @@ function ConfirmationContent() {
           </h1>
           <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: 14, lineHeight: 1.7, marginBottom: 20 }}>
             {appointment?.staffName} · {appointment?.serviceName}{' '}
-            {appointment?.startAt && new Date(appointment.startAt).toLocaleString([], {
+            {appointment?.startAt && new Date(appointment.startAt).toLocaleString('en-US', {
               weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
             })}
           </p>

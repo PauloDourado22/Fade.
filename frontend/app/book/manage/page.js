@@ -54,7 +54,7 @@ function ManageContent() {
       // Copy matched to mockup 6b's "MOVED. {NAME} NOW EXPECTS YOU {time}.
       // DEPOSIT CARRIES OVER." (sentence case here per the rest of this UI's
       // copy style, not the mockup's caps-lock mono treatment).
-      setMessage(`Moved. ${booking.staffName} now expects you ${new Date(updated.startAt).toLocaleString([], {
+      setMessage(`Moved. ${booking.staffName} now expects you ${new Date(updated.startAt).toLocaleString('en-US', {
         weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
       })}. Deposit carries over.`);
     } catch (err) {
@@ -117,7 +117,7 @@ function ManageContent() {
         <div className="summary-row">
           <span className="k">Time</span>
           <span className="v" style={{ color: 'var(--accent)' }}>
-            {new Date(booking.startAt).toLocaleString([], {
+            {new Date(booking.startAt).toLocaleString('en-US', {
               weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
             })}
           </span>
@@ -181,7 +181,7 @@ function ManageContent() {
                 className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
                 onClick={() => setSelectedSlot(slot)}
               >
-                {new Date(slot).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {new Date(slot).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
               </button>
             ))}
           </div>

@@ -12,6 +12,12 @@
   --surface-3: #212120;
   --border: rgba(244, 242, 234, 0.12);
   --border-strong: rgba(244, 242, 234, 0.22);
+  --border-soft: rgba(244, 242, 234, 0.07);
+
+  /* Slightly darker than --surface-2, only used for the date-slider
+     track (mockup 7b) - matched to the mockup's literal value rather
+     than reusing an existing surface a shade off from it. */
+  --track-bg: #141412;
 
   --text: #f4f2ea;
   --text-muted: #8f8d82;
@@ -33,10 +39,16 @@
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 14px;
+  --radius-xl: 18px;
 
   --dur-fast: 120ms;
   --dur: 200ms;
   --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  /* Matches mockup 7b's thumb-glide animation exactly - slower and
+     springier than the rest of the UI's quick hover transitions, since
+     this one has to visually travel a distance, not just fade a color. */
+  --dur-slide: 0.32s;
+  --ease-slide: cubic-bezier(0.22, 1, 0.36, 1);
 
   --font-display: var(--font-archivo), 'Archivo', -apple-system, sans-serif;
   --font-mono: var(--font-plex-mono), 'IBM Plex Mono', monospace;
@@ -470,6 +482,197 @@ a { color: inherit; text-decoration: none; }
 
 .slot-btn:hover { border-color: var(--border-strong); }
 .slot-btn.selected { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+/* Date slider - matches mockup 7b ("segmented slider, marker glides to
+   selection") exactly: one continuous track with a single lime thumb that
+   animates to whichever segment is selected, instead of each day being
+   its own bordered pill. Segments sit flush against each other (no gap)
+   so the thumb's `left` offset is just index * SEGMENT_WIDTH. */
+.date-slider-row {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+/* Edge fade instead of a visible scrollbar - same trick 7b's spec uses
+   (mask-image at 90%) to hint "more to scroll" without a scrollbar thumb
+   competing with the lime slider thumb for attention. */
+.date-slider-scroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent);
+  mask-image: linear-gradient(90deg, #000 90%, transparent);
+}
+
+.date-slider-scroll::-webkit-scrollbar { display: none; }
+
+.date-slider-track {
+  position: relative;
+  display: flex;
+  width: max-content;
+  background: var(--track-bg);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 5px;
+}
+
+.date-slider-thumb {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  width: 56px;
+  background: var(--accent);
+  border-radius: 9px;
+  box-shadow: 0 6px 14px rgba(214, 249, 75, 0.28);
+  transition: left var(--dur-slide) var(--ease-slide);
+}
+
+/* Scaled down from the 7b mockup's standalone size (78x104, 28px day
+   numbers) - that worked in isolation but towered over the 44px-tall
+   .slot-btn grid directly beneath it once the two sat in the same
+   step. Sized closer to that grid instead of the original spec's
+   literal pixels, so the two controls read as one family of controls. */
+.date-slider-seg {
+  position: relative;
+  z-index: 1;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+
+.date-slider-seg .wk { font-size: 9px; letter-spacing: 0.14em; color: var(--text-muted); }
+.date-slider-seg .num { font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; color: var(--text); }
+.date-slider-seg .status-dot { width: 4px; height: 4px; border-radius: 999px; background: var(--accent); }
+
+.date-slider-seg.selected .wk,
+.date-slider-seg.selected .num {
+  color: var(--accent-text);
+}
+
+.date-slider-seg.selected .status-dot {
+  background: var(--accent-text);
+}
+
+.date-slider-seg:disabled { cursor: not-allowed; }
+.date-slider-seg:disabled .wk { color: var(--text-faint); }
+.date-slider-seg:disabled .num { color: var(--text-faint); }
+.date-slider-seg:disabled .status-dot { background: var(--text-faint); }
+
+/* Full track height rather than a small icon circle - reads as one
+   control with the slider, not a separate floating button next to it. */
+.date-slider-all-btn {
+  flex: 0 0 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: none;
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.14em;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+
+.date-slider-all-btn:hover { background: var(--accent-soft); }
+
+.date-slider-legend {
+  display: flex;
+  gap: 18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+.date-slider-legend span { display: flex; align-items: center; gap: 6px; }
+
+.date-slider-legend .status-dot { width: 6px; height: 6px; border-radius: 999px; }
+.date-slider-legend .status-dot.open { background: var(--accent); }
+.date-slider-legend .status-dot.closed { background: var(--text-faint); }
+
+/* Calendar fallback: a real month grid instead of falling back to the
+   native <input type="date"> the day-strip replaced - keeps the escape
+   hatch in the same dark/mono/lime language as everything else.
+   Capped width + fixed (not aspect-ratio-stretched) day circles - this is
+   a compact utility panel, not a full-bleed block, and needs to stay small
+   on a ~360px phone screen where it's mostly going to be used. */
+.calendar-panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  max-width: 280px;
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.calendar-header .circle-btn {
+  width: 26px;
+  height: 26px;
+  background: var(--surface-3);
+  font-size: 12px;
+}
+
+.calendar-month-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendar-weekday {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: center;
+  padding-bottom: 4px;
+}
+
+.calendar-day {
+  justify-self: center;
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.calendar-day:hover:not(:disabled) { background: var(--surface-3); }
+.calendar-day.selected { background: var(--accent); color: var(--accent-text); font-weight: 700; }
+.calendar-day:disabled { color: var(--text-faint); cursor: not-allowed; }
 
 /* ============================================================
    Forms

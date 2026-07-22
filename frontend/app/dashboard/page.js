@@ -146,7 +146,7 @@ export default function DashboardPage() {
                 {appointments.map((a) => (
                   <tr key={a.id}>
                     <td style={{ fontFamily: 'var(--font-mono)', color: 'var(--accent)' }}>
-                      {new Date(a.start_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(a.start_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                     </td>
                     <td>
                       {a.customer_name}
@@ -202,7 +202,7 @@ export default function DashboardPage() {
               {stats.needsAttention.map((item) => (
                 <div key={item.id} style={{ marginBottom: 14 }}>
                   <div className="alert-row">
-                    {item.customerName} — {new Date(item.startAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}{' '}
+                    {item.customerName} — {new Date(item.startAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}{' '}
                     {item.serviceName}. Deposit unpaid, hold expires in{' '}
                     <span style={{ color: 'var(--moderate)' }}>{item.minutesLeft} min</span>.
                   </div>
