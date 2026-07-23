@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { db } from '../db/index.js';
 import { config } from '../config.js';
+import { getSetting } from './settingsService.js';
 import { createCheckoutSession } from './stripeService.js';
 
 export class ConflictError extends Error {
@@ -35,7 +36,7 @@ export function createBookingHold({ serviceId, staffId, startAt, customer }) {
 
   const start = new Date(startAt);
   const end = new Date(start.getTime() + service.duration_minutes * 60_000);
-  const holdExpiresAt = new Date(Date.now() + config.holdDurationMinutes * 60_000);
+  const holdExpiresAt = new Date(Date.now() + getSetting('hold_duration_minutes') * 60_000);
   const publicCode = nanoid(12);
 
   const insert = db.transaction(() => {
@@ -89,7 +90,7 @@ export async function createHoldWithCheckout(input) {
   // need to know this happened: it still gets a `checkoutUrl` and does its
   // normal `window.location.href = checkoutUrl` redirect - it just lands
   // straight on the real confirmation page instead of Stripe Checkout.
-  if (!config.depositEnabled) {
+  if (!getSetting('deposit_enabled')) {
     db.prepare("UPDATE appointments SET status = 'confirmed' WHERE id = ?").run(appointment.id);
     const confirmed = db.prepare('SELECT * FROM appointments WHERE id = ?').get(appointment.id);
     return {
@@ -210,4 +211,112 @@ export function cancelAppointmentByPublicCode(publicCode) {
 
   db.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?").run(appointment.id);
   return db.prepare('SELECT * FROM appointments WHERE id = ?').get(appointment.id);
+}
+
+// Shared conflict-check-then-insert used by the two owner-side creators
+// below. Same transactional guarantee as createBookingHold (see its doc):
+// the check and insert run in one better-sqlite3 transaction on a single
+// thread, so two owner actions can't both slip into the same slot. Rows go
+// in already 'confirmed' - an owner-created entry (walk-in or block) is not
+// waiting on a deposit, so it should occupy the chair immediately.
+function insertConfirmedRow({ serviceId, staffId, start, end, customerName, customerEmail, depositCents, isBlock }) {
+  const publicCode = nanoid(12);
+
+  const insert = db.transaction(() => {
+    const conflict = db
+      .prepare(
+        `SELECT id FROM appointments
+         WHERE staff_id = ?
+           AND status IN ('confirmed', 'pending_payment')
+           AND start_at < ? AND end_at > ?`
+      )
+      .get(staffId, end.toISOString(), start.toISOString());
+
+    if (conflict) {
+      throw new ConflictError('That time overlaps something already on this barber\'s book.');
+    }
+
+    const result = db
+      .prepare(
+        `INSERT INTO appointments
+           (public_code, service_id, staff_id, customer_name, customer_email, customer_phone,
+            start_at, end_at, status, hold_expires_at, deposit_cents, is_block)
+         VALUES (?, ?, ?, ?, ?, NULL, ?, ?, 'confirmed', NULL, ?, ?)`
+      )
+      .run(publicCode, serviceId, staffId, customerName, customerEmail, start.toISOString(), end.toISOString(), depositCents, isBlock);
+
+    return db.prepare('SELECT * FROM appointments WHERE id = ?').get(result.lastInsertRowid);
+  });
+
+  return insert();
+}
+
+/**
+ * Owner-created walk-in: a real customer the owner is booking in person, so
+ * it skips the deposit/Stripe flow entirely and lands 'confirmed'. deposit
+ * is 0 (they pay the full price at the chair), which is why the dashboard's
+ * "deposits secured" doesn't move but "at the chair" does.
+ */
+export function createOwnerBooking({ serviceId, staffId, startAt, customerName, customerEmail }) {
+  const service = db.prepare('SELECT * FROM services WHERE id = ? AND active = 1').get(serviceId);
+  if (!service) throw new NotFoundError('Service not found.');
+
+  const staff = db.prepare('SELECT * FROM staff WHERE id = ? AND active = 1').get(staffId);
+  if (!staff) throw new NotFoundError('Staff member not found.');
+
+  const start = new Date(startAt);
+  const end = new Date(start.getTime() + service.duration_minutes * 60_000);
+
+  return insertConfirmedRow({
+    serviceId,
+    staffId,
+    start,
+    end,
+    customerName,
+    customerEmail: customerEmail || '',
+    depositCents: 0,
+    isBlock: 0,
+  });
+}
+
+// A block needs a service_id (the column is NOT NULL + a foreign key), but a
+// "barber's at lunch" row has no real service. Rather than make service_id
+// nullable (a table rebuild), we point every block at one inactive sentinel
+// service, created on first use so it never depends on a re-seed. active = 0
+// keeps it out of the customer-facing service list.
+function getOrCreateBlockServiceId() {
+  const existing = db.prepare("SELECT id FROM services WHERE name = '__block__'").get();
+  if (existing) return existing.id;
+  const result = db
+    .prepare(
+      "INSERT INTO services (name, duration_minutes, price_cents, deposit_cents, active) VALUES ('__block__', 0, 0, 0, 0)"
+    )
+    .run();
+  return result.lastInsertRowid;
+}
+
+/**
+ * Owner-created time block: no customer, no real service. Stored as a normal
+ * 'confirmed' appointment (so every availability/conflict check treats the
+ * chair as busy for free) but flagged is_block = 1 so counts and revenue
+ * skip it. The block's reason (e.g. "Lunch") rides in customer_name, which
+ * is where the dashboard reads it from for display.
+ */
+export function createBlock({ staffId, startAt, durationMinutes, reason }) {
+  const staff = db.prepare('SELECT * FROM staff WHERE id = ? AND active = 1').get(staffId);
+  if (!staff) throw new NotFoundError('Staff member not found.');
+
+  const start = new Date(startAt);
+  const end = new Date(start.getTime() + durationMinutes * 60_000);
+
+  return insertConfirmedRow({
+    serviceId: getOrCreateBlockServiceId(),
+    staffId,
+    start,
+    end,
+    customerName: reason?.trim() || 'Blocked',
+    customerEmail: '',
+    depositCents: 0,
+    isBlock: 1,
+  });
 }

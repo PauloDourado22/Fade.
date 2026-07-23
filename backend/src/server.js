@@ -4,6 +4,7 @@ import { config } from './config.js';
 import { authRouter } from './routes/auth.js';
 import { publicRouter } from './routes/public.js';
 import { appointmentsRouter } from './routes/appointments.js';
+import { adminRouter } from './routes/admin.js';
 import { webhooksRouter } from './routes/webhooks.js';
 
 const app = express();
@@ -24,6 +25,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRouter);
 app.use('/api/public', publicRouter);
 app.use('/api/appointments', appointmentsRouter);
+app.use('/api/admin', adminRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);

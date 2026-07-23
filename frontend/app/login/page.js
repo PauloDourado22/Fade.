@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { api } from '../lib/api';
 import { auth } from '../lib/auth';
 
@@ -29,7 +30,7 @@ export default function LoginPage() {
 
   return (
     <main className="container" style={{ maxWidth: 380, paddingTop: 96 }}>
-      <span className="brand" style={{ display: 'block', marginBottom: 24 }}>FADE.</span>
+      <Link href="/" className="brand" aria-label="FADE. — back to home" style={{ display: 'block', marginBottom: 24 }}>FADE.</Link>
       <div className="card">
         <h1 style={{
           fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 800,

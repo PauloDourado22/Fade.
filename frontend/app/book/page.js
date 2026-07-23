@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { api } from '../lib/api';
 
 // FADE.'s flow leads with "who's cutting" rather than "what service" - see
@@ -30,6 +31,23 @@ const SEGMENT_WIDTH = 56;
 // padding - without adding it back, the thumb sits this many px left of
 // where the segment it's supposed to highlight actually is.
 const TRACK_PADDING = 5;
+
+// Split a day's slots into Morning / Afternoon / Evening so a long list
+// of on-the-hour times scans in chunks instead of one undifferentiated
+// run. Boundaries: before noon = morning, noon-4:59pm = afternoon, 5pm+ =
+// evening. Groups with no slots are dropped by the render, not here.
+const SLOT_PERIODS = [
+  { label: 'Morning', test: (h) => h < 12 },
+  { label: 'Afternoon', test: (h) => h >= 12 && h < 17 },
+  { label: 'Evening', test: (h) => h >= 17 },
+];
+
+function groupSlotsByPeriod(slots) {
+  return SLOT_PERIODS.map((period) => ({
+    label: period.label,
+    slots: slots.filter((s) => period.test(new Date(s).getHours())),
+  })).filter((g) => g.slots.length > 0);
+}
 
 function buildUpcomingDays(count) {
   const start = new Date();
@@ -98,10 +116,17 @@ export default function BookPage() {
   const [customer, setCustomer] = useState({ name: '', email: '', phone: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  // How far ahead the day-slider runs - owner-controlled (Settings > Booking
+  // policy). Defaults to DAYS_AHEAD until the public settings load.
+  const [daysAhead, setDaysAhead] = useState(DAYS_AHEAD);
+  const [depositEnabled, setDepositEnabled] = useState(true);
 
   useEffect(() => {
     api.getServices().then(setServices).catch((e) => setError(e.message));
     api.getStaff().then(setStaffList).catch((e) => setError(e.message));
+    api.getPublicSettings()
+      .then((s) => { setDaysAhead(s.bookingWindowDays); setDepositEnabled(s.depositEnabled); })
+      .catch(() => {}); // fall back to defaults if settings can't load
   }, []);
 
   useEffect(() => {
@@ -156,7 +181,7 @@ export default function BookPage() {
     setSelectedDate(iso);
   }
 
-  const upcomingDays = buildUpcomingDays(DAYS_AHEAD);
+  const upcomingDays = buildUpcomingDays(daysAhead);
   // -1 when the selected date is off the strip entirely (picked via the
   // calendar past the 14-day window) - the thumb just doesn't render then,
   // matching 7b's slBthumbShow toggle for the same case.
@@ -171,10 +196,14 @@ export default function BookPage() {
     '',
   ];
 
+  // When the owner has deposits turned off, the customer pays nothing up
+  // front and the full price at the chair - so the effective deposit is $0
+  // regardless of the service's configured deposit_cents.
+  const effectiveDepositCents = depositEnabled && selectedService ? selectedService.deposit_cents : 0;
   const priceLabel = selectedService ? `$${(selectedService.price_cents / 100).toFixed(0)}` : '—';
-  const depositLabel = selectedService ? `$${(selectedService.deposit_cents / 100).toFixed(0)}` : '—';
+  const depositLabel = selectedService ? `$${(effectiveDepositCents / 100).toFixed(0)}` : '—';
   const balanceLabel = selectedService
-    ? `$${((selectedService.price_cents - selectedService.deposit_cents) / 100).toFixed(0)}`
+    ? `$${((selectedService.price_cents - effectiveDepositCents) / 100).toFixed(0)}`
     : '—';
 
   return (
@@ -196,13 +225,13 @@ export default function BookPage() {
             <span key={i} className={`dot ${i <= step ? 'filled' : ''}`} />
           ))}
         </div>
-        <span className="dep-hint">$15 DEP</span>
+        <span className="dep-hint">{depositEnabled ? 'DEPOSIT' : 'NO DEP'}</span>
       </div>
 
       <div className="book-grid">
         {/* Desktop-only sidebar, matching mockup 5b. Hidden on mobile via CSS. */}
         <aside className="book-sidebar">
-          <span className="brand">FADE.</span>
+          <Link href="/" className="brand" aria-label="FADE. — back to home">FADE.</Link>
           <div className="sidebar-steps">
             {STEPS.map((label, i) => (
               <div
@@ -374,24 +403,33 @@ export default function BookPage() {
                 </div>
               )}
 
-              <div className="slot-grid">
-                {slots.length === 0 && (
+              <div className="slot-list">
+                {slots.length === 0 ? (
                   <p className="empty-state">
                     {CLOSED_WEEKDAYS.includes(new Date(`${selectedDate}T00:00:00`).getDay())
                       ? "We're closed this day — pick Tue–Sat from the slider above."
                       : 'No open slots left this day — try another date or barber.'}
                   </p>
+                ) : (
+                  groupSlotsByPeriod(slots).map((group) => (
+                    <div key={group.label} className="slot-group">
+                      <div className="slot-group-label">{group.label}</div>
+                      {group.slots.map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          className={`slot-row ${selectedSlot === slot ? 'selected' : ''}`}
+                          onClick={() => setSelectedSlot(slot)}
+                        >
+                          <span className="slot-radio">
+                            {selectedSlot === slot && <span className="slot-radio-fill" />}
+                          </span>
+                          {new Date(slot).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                        </button>
+                      ))}
+                    </div>
+                  ))
                 )}
-                {slots.map((slot) => (
-                  <button
-                    key={slot}
-                    type="button"
-                    className={`slot-btn ${selectedSlot === slot ? 'selected' : ''}`}
-                    onClick={() => setSelectedSlot(slot)}
-                  >
-                    {new Date(slot).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                  </button>
-                ))}
               </div>
               <button className="btn" disabled={!selectedSlot} onClick={() => setStep(3)} style={{ marginTop: 8 }}>
                 Review →
@@ -457,7 +495,9 @@ export default function BookPage() {
                 />
               </div>
               <button className="btn" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Redirecting to payment…' : 'Pay $15 deposit'}
+                {isSubmitting
+                  ? (depositEnabled ? 'Redirecting to payment…' : 'Confirming…')
+                  : (depositEnabled ? `Pay ${depositLabel} deposit` : 'Confirm booking')}
               </button>
               <p className="helper-note">
                 Refundable up to 24h before · unpaid holds expire in a few minutes.

@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { api } from '../../lib/api';
 
 const ACTIVE_STATUSES = ['confirmed', 'pending_payment'];
@@ -102,7 +103,7 @@ function ManageContent() {
 
   return (
     <main className="container" style={{ maxWidth: 480 }}>
-      <span className="brand" style={{ display: 'block', marginBottom: 20 }}>FADE.</span>
+      <Link href="/" className="brand" aria-label="FADE. — back to home" style={{ display: 'block', marginBottom: 20 }}>FADE.</Link>
       <p className="hero-kicker" style={{ marginBottom: 4 }}>Booking #{code}</p>
       <h1 style={{
         fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 900,

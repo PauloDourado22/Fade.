@@ -1,10 +1,10 @@
 import { db } from '../db/index.js';
+import { getSetting } from './settingsService.js';
 
-// Bookable start times are offered on the hour only (10:00, 11:00, ... not
-// 10:15, 10:30...). Working hours themselves (10:00-20:00) live in
-// working_hours rows, seeded/enforced by db/seed.js - this constant only
-// controls the granularity slots are offered at within those hours.
-const SLOT_STEP_MINUTES = 60;
+// Slot granularity is now a runtime setting (Settings > Booking policy),
+// defaulting to 60 (on-the-hour). Working hours themselves live in
+// working_hours rows; this only controls the step slots are offered at
+// within those hours.
 
 /**
  * Marks any pending_payment appointment whose hold has expired as 'expired',
@@ -35,6 +35,13 @@ export function expireStaleHolds() {
 export function getAvailableSlots({ staffId, date, durationMinutes }) {
   expireStaleHolds();
 
+  // A one-off closure (holiday, private event) overrides the weekly pattern:
+  // no slots that day even if the barber normally works it.
+  const closed = db.prepare('SELECT 1 FROM closures WHERE date = ?').get(date);
+  if (closed) return [];
+
+  const slotStep = getSetting('slot_step_minutes');
+
   const weekday = new Date(`${date}T00:00:00`).getDay();
   const windows = db
     .prepare('SELECT start_minute, end_minute FROM working_hours WHERE staff_id = ? AND weekday = ?')
@@ -63,7 +70,7 @@ export function getAvailableSlots({ staffId, date, durationMinutes }) {
     for (
       let candidate = windowStart;
       addMinutes(candidate, durationMinutes) <= windowEnd;
-      candidate = addMinutes(candidate, SLOT_STEP_MINUTES)
+      candidate = addMinutes(candidate, slotStep)
     ) {
       const candidateEnd = addMinutes(candidate, durationMinutes);
 

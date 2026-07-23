@@ -68,15 +68,75 @@ function occupancyForDate(dateStr) {
   return Math.round((bookedMinutes / workingMinutes) * 100);
 }
 
+/**
+ * Per-barber view of a single day: how many appointments each active staff
+ * member has, and how full their own chair is. Same occupancy math as
+ * occupancyForDate() but scoped to one staff_id's working window and one
+ * staff_id's appointments - so "who's slammed and who's idle" is answerable
+ * at a glance, not just the shop-wide average.
+ */
+function perBarberForDate(dateStr) {
+  const weekday = new Date(`${dateStr}T00:00:00`).getDay();
+  const dayStart = new Date(`${dateStr}T00:00:00.000`);
+  const dayEnd = new Date(`${dateStr}T23:59:59.999`);
+
+  const staff = db.prepare('SELECT id, name FROM staff WHERE active = 1 ORDER BY name').all();
+
+  return staff.map((member) => {
+    const workingMinutes = db
+      .prepare(
+        `SELECT COALESCE(SUM(end_minute - start_minute), 0) as minutes
+         FROM working_hours WHERE staff_id = ? AND weekday = ?`
+      )
+      .get(member.id, weekday).minutes;
+
+    const rows = db
+      .prepare(
+        `SELECT start_at, end_at FROM appointments
+         WHERE staff_id = ?
+           AND status IN (${BUSY_STATUSES.map(() => '?').join(',')})
+           AND start_at < ? AND end_at > ?`
+      )
+      .all(member.id, ...BUSY_STATUSES, dayEnd.toISOString(), dayStart.toISOString());
+
+    const bookedMinutes = rows.reduce((sum, row) => {
+      const start = Math.max(new Date(row.start_at).getTime(), dayStart.getTime());
+      const end = Math.min(new Date(row.end_at).getTime(), dayEnd.getTime());
+      return sum + Math.max(0, (end - start) / 60_000);
+    }, 0);
+
+    const count = db
+      .prepare(
+        `SELECT COUNT(*) as n FROM appointments
+         WHERE staff_id = ? AND date(start_at) = date(?) AND is_block = 0
+           AND status IN (${ACTIVE_STATUSES.map(() => '?').join(',')})`
+      )
+      .get(member.id, dateStr, ...ACTIVE_STATUSES).n;
+
+    return {
+      staffId: member.id,
+      name: member.name,
+      count,
+      // A barber with no working_hours that day (e.g. day off) reads 0%,
+      // not a divide-by-zero - mirrors occupancyForDate's guard.
+      occupancyPct: workingMinutes === 0 ? 0 : Math.round((bookedMinutes / workingMinutes) * 100),
+      working: workingMinutes > 0,
+    };
+  });
+}
+
 export function getDashboardStats() {
   expireStaleHolds();
 
   const today = isoDate(new Date());
 
+  // is_block = 0 throughout the count/revenue queries: a time block occupies
+  // the chair (so it counts toward occupancy) but it isn't a booking and
+  // earns nothing, so it must not inflate the appointment count or revenue.
   const todayCount = db
     .prepare(
       `SELECT COUNT(*) as n FROM appointments
-       WHERE date(start_at) = date(?) AND status IN (${ACTIVE_STATUSES.map(() => '?').join(',')})`
+       WHERE date(start_at) = date(?) AND is_block = 0 AND status IN (${ACTIVE_STATUSES.map(() => '?').join(',')})`
     )
     .get(today, ...ACTIVE_STATUSES).n;
 
@@ -87,7 +147,31 @@ export function getDashboardStats() {
     )
     .get(today).cents;
 
+  // Revenue for the day, split into the two real cashflows a barbershop
+  // owner cares about separately:
+  //   depositsCents  - money already secured up front (confirmed/completed
+  //                    holds; a pending_payment hold has NOT paid yet, so it
+  //                    is deliberately excluded and shown as `heldCents`).
+  //   atChairCents   - the remainder each customer still pays in person
+  //                    (price - deposit), i.e. cash the chair will take today.
+  // Their sum (expectedCents) is the day's total booked value. All three are
+  // straight SUMs over the same rows - no projection or estimate.
+  const revenue = db
+    .prepare(
+      `SELECT
+         COALESCE(SUM(a.deposit_cents), 0) AS deposits,
+         COALESCE(SUM(s.price_cents - a.deposit_cents), 0) AS atChair,
+         COALESCE(SUM(s.price_cents), 0) AS expected
+       FROM appointments a
+       JOIN services s ON s.id = a.service_id
+       WHERE date(a.start_at) = date(?)
+         AND a.is_block = 0
+         AND a.status IN ('confirmed', 'completed')`
+    )
+    .get(today);
+
   const todayOccupancyPct = occupancyForDate(today);
+  const barbers = perBarberForDate(today);
 
   const week = [];
   for (let i = 0; i < 7; i += 1) {
@@ -130,7 +214,15 @@ export function getDashboardStats() {
     }));
 
   return {
-    today: { count: todayCount, heldCents, occupancyPct: todayOccupancyPct },
+    today: {
+      count: todayCount,
+      heldCents,
+      occupancyPct: todayOccupancyPct,
+      depositsCents: revenue.deposits,
+      atChairCents: revenue.atChair,
+      expectedCents: revenue.expected,
+    },
+    barbers,
     week,
     needsAttention,
   };

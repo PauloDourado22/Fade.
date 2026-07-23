@@ -28,7 +28,7 @@ export default function Home() {
   return (
     <main>
       <nav className="nav">
-        <span className="brand">FADE.</span>
+        <Link href="/" className="brand" aria-label="FADE. — home">FADE.</Link>
         <div className="nav-links">
           <a href="#menu" className="nav-link">Cuts</a>
           <a href="#crew" className="nav-link">Crew</a>

@@ -60,3 +60,24 @@ CREATE INDEX IF NOT EXISTS idx_appointments_staff_time
 
 CREATE INDEX IF NOT EXISTS idx_appointments_status
   ON appointments (status);
+
+-- Runtime-editable settings. A simple key/value store: values are text and
+-- parsed by the settings service against a known default per key, so the
+-- owner can change booking policy (deposit on/off, hold length, how far
+-- ahead bookings open, etc.) from the dashboard without a redeploy. Keys not
+-- present here fall back to the config.js defaults.
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+-- One-off shop closures (a public holiday, a private event). Distinct from
+-- working_hours, which only models the recurring weekly pattern - this is
+-- "shut on this specific date regardless of the usual hours". Checked by the
+-- availability calculation before any slots are offered.
+CREATE TABLE IF NOT EXISTS closures (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL UNIQUE, -- 'YYYY-MM-DD'
+  reason TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

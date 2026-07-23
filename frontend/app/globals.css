@@ -483,6 +483,68 @@ a { color: inherit; text-decoration: none; }
 .slot-btn:hover { border-color: var(--border-strong); }
 .slot-btn.selected { border-color: var(--accent); color: var(--accent); font-weight: 600; }
 
+/* Time slots as a grouped list (Morning / Afternoon / Evening) instead of
+   a flat grid of identical pills - a long day's worth of on-the-hour slots
+   scans faster when it's chunked by period, and a vertical row has room
+   for a radio dot that reads as an explicit "pick one of these". */
+.slot-list { margin-bottom: 8px; }
+
+.slot-group-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--text-faint);
+  padding: 0 4px 6px;
+}
+/* Space above every group after the first, so periods breathe apart. */
+.slot-group + .slot-group .slot-group-label { padding-top: 16px; }
+
+.slot-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 4px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  min-height: 44px;
+  transition: background var(--dur) var(--ease);
+}
+
+.slot-row:hover:not(.selected) { background: var(--surface-2); }
+.slot-row.selected { background: var(--accent-soft); color: var(--accent); }
+
+/* Radio dot: hollow ring on every row, filled lime on the selected one -
+   the empty rings on unselected rows are what make it read as a single-
+   choice picker rather than a list of links. */
+.slot-radio {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.slot-row.selected .slot-radio { border-color: var(--accent); }
+
+.slot-radio-fill {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
 /* Date slider - matches mockup 7b ("segmented slider, marker glides to
    selection") exactly: one continuous track with a single lime thumb that
    animates to whichever segment is selected, instead of each day being
@@ -495,14 +557,13 @@ a { color: inherit; text-decoration: none; }
   margin-bottom: 8px;
 }
 
-/* Edge fade instead of a visible scrollbar - same trick 7b's spec uses
-   (mask-image at 90%) to hint "more to scroll" without a scrollbar thumb
-   competing with the lime slider thumb for attention. */
+/* Scrollbar hidden (the lime thumb is the only marker that should read as
+   a slider handle), but no edge-fade mask - the fade made the last day in
+   view look cut off / disabled rather than "scroll for more," so the track
+   now ends cleanly on both sides. */
 .date-slider-scroll {
   overflow-x: auto;
   scrollbar-width: none;
-  -webkit-mask-image: linear-gradient(90deg, #000 90%, transparent);
-  mask-image: linear-gradient(90deg, #000 90%, transparent);
 }
 
 .date-slider-scroll::-webkit-scrollbar { display: none; }
@@ -706,6 +767,35 @@ a { color: inherit; text-decoration: none; }
 
 .form-group input:focus { outline: none; border-color: var(--accent); }
 
+/* Dashboard book filter bar: search box grows, status select stays fixed.
+   Reuses the .form-group input look so the whole admin surface matches. */
+.book-filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.book-filters input,
+.book-filters select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: max(16px, 0.875rem);
+  transition: border-color var(--dur) var(--ease);
+}
+
+.book-filters input { flex: 1; min-width: 0; }
+.book-filters select { flex: 0 0 auto; cursor: pointer; }
+.book-filters input:focus,
+.book-filters select:focus { outline: none; border-color: var(--accent); }
+
+/* Shrink the shared .btn to match the filter inputs' height - the default
+   button padding (15px 26px) towers over the 10px-padded inputs. */
+.book-filters .btn { flex: 0 0 auto; padding: 10px 18px; font-size: 13px; }
+
 .error-text { color: var(--bad); font-size: 13px; margin-top: 6px; font-family: var(--font-mono); }
 .success-text { color: var(--good); font-size: 14px; font-weight: 700; }
 
@@ -786,6 +876,129 @@ a { color: inherit; text-decoration: none; }
 .badge-cancelled { background: var(--bad-soft); color: var(--bad); }
 .badge-completed { background: var(--info-soft); color: var(--info); }
 .badge-expired { background: rgba(143, 141, 130, 0.14); color: var(--text-muted); }
+.badge-no_show { background: var(--bad-soft); color: var(--bad); }
+
+/* Clickable customer name in the book -> opens the history drawer. Looks
+   like text until hovered, so the table stays calm. */
+.link-name {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px dotted var(--border-strong);
+}
+.link-name:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Add-to-book form (feature 5). Reuses the dark input look; the mode
+   toggle is a two-button segmented control. */
+.add-book-form {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.add-mode-toggle { display: flex; gap: 6px; }
+
+.add-mode-toggle button {
+  flex: 1;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--dur) var(--ease);
+}
+
+.add-mode-toggle button.active { border-color: var(--accent); color: var(--accent); }
+
+.add-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.add-fields input,
+.add-fields select {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: max(16px, 0.8125rem);
+}
+
+.add-fields input:focus,
+.add-fields select:focus { outline: none; border-color: var(--accent); }
+
+/* Customer history drawer (feature 7): a right-side sheet over a dim
+   overlay. position:fixed is fine here (real app, unlike a sandboxed
+   preview) - it anchors to the viewport regardless of scroll. */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 50;
+}
+
+.drawer {
+  width: min(460px, 100%);
+  height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.drawer-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.drawer-title { font-family: var(--font-display); font-size: 20px; font-weight: 900; }
+.drawer-sub { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.drawer-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.drawer-summary > div { background: var(--surface-2); padding: 12px 8px; text-align: center; }
+.drawer-summary .n { display: block; font-family: var(--font-display); font-size: 22px; font-weight: 900; }
+.drawer-summary .l { display: block; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint); margin-top: 4px; }
+
+.drawer-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-row .when { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+.drawer-row .what { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); grid-column: 1; }
+.drawer-row .badge { grid-column: 2; grid-row: 1 / span 2; }
 
 /* ============================================================
    Dashboard stat cards / occupancy / alert panel
@@ -821,6 +1034,45 @@ a { color: inherit; text-decoration: none; }
 
 .stat-s { font-family: var(--font-mono); font-size: 11px; margin-top: 4px; }
 
+/* Revenue band: today's money, split into deposits secured vs cash still
+   to collect at the chair, with the total on the right in lime. Its own
+   labeled strip below the stat cells so "money" reads as one grouping. */
+.revenue-band {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  background: var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.revenue-cell {
+  flex: 1;
+  background: var(--surface-2);
+  padding: 16px 20px;
+}
+
+.revenue-cell.total { background: var(--surface-3); }
+
+.revenue-k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.revenue-v {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  margin-top: 6px;
+}
+
+.revenue-cell.total .revenue-v { color: var(--accent); }
+
 .side-panel {
   background: var(--surface-2);
   border-radius: var(--radius-lg);
@@ -853,6 +1105,24 @@ a { color: inherit; text-decoration: none; }
 }
 
 .occ-bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+
+/* Per-barber row: name + booking count on top, occupancy bar below.
+   Wider name column than .occ-row (which is for 3-letter weekday labels). */
+.barber-row { margin-bottom: 14px; }
+.barber-row:last-child { margin-bottom: 0; }
+
+.barber-row-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.barber-row-head .name { color: var(--text); }
+.barber-row-head .meta { color: var(--text-muted); font-size: 11px; }
+.barber-row-head .meta.off { color: var(--text-faint); }
 
 .alert-panel {
   background: var(--moderate-soft);
@@ -995,4 +1265,129 @@ a { color: inherit; text-decoration: none; }
   .step { font-size: 9.5px; }
   .nav { flex-wrap: wrap; gap: 10px; }
   .nav-links { flex-wrap: wrap; gap: 14px 20px; }
+  .settings-grid { grid-template-columns: 1fr; }
+  .crud-add { flex-wrap: wrap; }
+  .crud-row { flex-wrap: wrap; }
 }
+
+/* ============================================================
+   Settings page
+   ============================================================ */
+.settings-section {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  margin-bottom: 20px;
+}
+
+.settings-section-head { margin-bottom: 16px; }
+.settings-sub { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); margin: 4px 0 0; }
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.settings-field { display: flex; flex-direction: column; gap: 6px; }
+
+.settings-field > span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.settings-field.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+.settings-field.checkbox > span { text-transform: none; font-size: 13px; color: var(--text); letter-spacing: 0; }
+
+.settings-field input,
+.settings-field select {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: max(16px, 0.85rem);
+}
+.settings-field input:focus,
+.settings-field select:focus { outline: none; border-color: var(--accent); }
+
+.settings-actions { grid-column: 1 / -1; display: flex; align-items: center; margin-top: 4px; }
+
+/* Working hours editor */
+.hours-barber { padding: 14px 0; border-bottom: 1px solid var(--border); }
+.hours-barber:last-child { border-bottom: none; }
+
+.hours-barber-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.hours-barber-head strong { font-size: 15px; }
+
+.hours-day {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.hours-day-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 72px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.hours-day input[type="time"] {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: max(16px, 0.8rem);
+}
+
+.hours-dash { color: var(--text-faint); }
+.hours-off { color: var(--text-faint); }
+
+/* Generic CRUD list + add-row used by services / staff / closures / logins */
+.crud-list { margin-bottom: 14px; }
+
+.crud-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.crud-row:last-child { border-bottom: none; }
+.crud-row.inactive { opacity: 0.5; }
+
+.crud-name { font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.crud-meta { flex: 1; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); min-width: 0; }
+
+.crud-add { display: flex; gap: 8px; align-items: center; }
+
+.crud-add input {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: max(16px, 0.85rem);
+}
+.crud-add input:focus { outline: none; border-color: var(--accent); }

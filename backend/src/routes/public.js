@@ -9,13 +9,26 @@ import {
   ConflictError,
   NotFoundError,
 } from '../services/bookingService.js';
+import { getSetting } from '../services/settingsService.js';
 import { isValidEmail, isNonEmptyString, isIsoDateString, isPositiveInteger } from '../utils/validate.js';
 import { createRateLimiter } from '../middleware/rateLimit.js';
 
 export const publicRouter = Router();
 
+// The customer-relevant slice of settings, so the booking page can honour
+// the owner's booking window / deposit / cancellation policy. Deliberately
+// NOT the whole settings object - internal values (hold duration, slot step,
+// timezone) aren't the customer's business and stay behind the admin auth.
+publicRouter.get('/settings', (req, res) => {
+  res.json({
+    bookingWindowDays: getSetting('booking_window_days'),
+    cancellationWindowHours: getSetting('cancellation_window_hours'),
+    depositEnabled: getSetting('deposit_enabled'),
+  });
+});
+
 publicRouter.get('/services', (req, res) => {
-  const services = db.prepare('SELECT * FROM services WHERE active = 1 ORDER BY name').all();
+  const services = db.prepare("SELECT * FROM services WHERE active = 1 AND name != '__block__' ORDER BY name").all();
   res.json(services);
 });
 
